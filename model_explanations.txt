@@ -1,0 +1,12 @@
+style_gan_3_text: got loss function from akanimax model and changed discriminator to conditional style
+style_gan_4_text: added mismatched text loss to discriminator loss
+style_gan_5_text: input noise is too big, multiplied input noise by 0.07 so it is roughly same scale as embedding, and changed noise dimension to 100 from 300.
+style_gan_6_text: Now uses condition augmentation network for augmenting embeddings. Results are worse. (Or maybe needs longer training compared to 5?)
+style_gan_7_text: Also uses encoder from akanimax's code. (Not good results) Update: !Encoder giving same embeddings no matter what input you give
+style_gan_8_text: updated generator loss so it also uses mismatched error + even smaller noise (from 0.07 to 0.01 and 50 dimension instead of 100)
+style_gan_9_text: copied from 8, made to work with celebA annotations and not text embeddings.
+style_gan_10_text: uses rnn from attnGan to encode word and sentences + uses fc layer to scale them to desired size to give into middle layers of generator instead of noise_1
+style_gan_11_text: same as style_gan_5_text but tested on toy dataset to see if it is conditioning on text or not.
+style_gan_12_text: same as style_gan_11_text (toy dataset) with modifications learned from simpleCGAN. Finally conditions on text descriptions properly.
+**style_gan_13_text: ****HAS BEST RESULTS**** Same as style_gan_13_text except trained on real dataset celebA. Works very good. ****HAS BEST RESULTS****
+style_gan_14_text: same as 13 but noise is not scaled with 0.07 to see if it effects outputs or not. Update: Works bad. results are not aligned with descriptions. Noise scale is important.
