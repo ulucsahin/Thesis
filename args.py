@@ -9,7 +9,12 @@ class Args():
     infersent_path = "C:/Users/ulucs/PycharmProjects/uluc_gan_github_version/Pretrained/infersent1.pkl"
     glove_path = "D:/Downloads/Tez vs/glove.840B.300d/glove.840B.300d.txt"
     descriptions_json_path = "E:/TezData/LFW/Face2Text/face2text_v1.0/raw_uluc.json"
+    cleanedup_lfw_descriptions = "E:/TezData/cleanedup_lfw.json" # cleaner hierarchy version of raw_uluc.json file
     celeba_annotations_path = "E:/TezData/list_attr_celeba.txt"
+    uluc_generated_descriptions = "E:/TezData/generated_attr_celeba.txt"
+    annotation_dict_path = "E:/TezData/celeba_annotation_index.txt"
+    annotation_sentence_parts = "E:/TezData/sentence_version_annotations.txt"
+
 
     # StyleGan Stuff
     sg_img_save_dir = "C:/Users/ulucs/PycharmProjects/uluc_gan_github_version/StyleGanOutputs/train_result/images/"

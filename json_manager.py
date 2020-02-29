@@ -31,6 +31,8 @@ class JSONManager(object):
 
         return data
 
+    def get_number_of_descriptions_at_idx(self, index):
+        return len(self.data[index]["descriptions"])
 
     def get_description_from_idx(self, index):
         """
