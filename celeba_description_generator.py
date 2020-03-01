@@ -3,36 +3,13 @@ from json_manager import JSONManager
 import json
 from tqdm import tqdm
 import os
-
+import re
+from random import randint
+import itertools
 # Parameters
-skip_under = 11
+skip_under = 10
 
-# Annotation indexes
-bald = 4
-bangs = 5
-has_bangs_hair = 5
-black_hair = 8
-blond_hair = 9
-brown_hair = 11
-gray_hair = 17
-straight_hair = 32
-wavy_hair = 33
-
-# gender and beard
-male = 20
-goatee = 16
-mustache = 22
-no_beard = 24
-
-# face
-chubby = 13
-oval_face = 25
-high_cheekbones = 19
-rosy_cheeks = 29
-
-# nose
-big_nose = 7
-pointy_nose = 27
+from annotation_manager import *
 
 def cleanup_face2text():
     json_manager = JSONManager(Args.descriptions_json_path)
@@ -51,6 +28,51 @@ def cleanup_face2text():
 
     with open(Args.cleanedup_lfw_descriptions, 'w') as outfile:
         json.dump(data, outfile)
+
+
+def generate_new_dataset_json():
+    """
+    Generate json file of new descriptions dataset combined with old descriptions (from 5685 data)
+    """
+    filepath = Args.uluc_generated_descriptions
+    dataset_5685 = Args.descriptions_json_path
+    savepath = Args.uluc_combined_dataset_json
+
+    # old json manager for extracting old descriptions
+    json_manager = JSONManager(dataset_5685)
+
+    data = {}
+    for i in range(len(json_manager.data)):
+        image_name = json_manager.get_imagename_from_idx(i)
+        no_descriptions = json_manager.get_number_of_descriptions_at_idx(i)
+        descriptions = []
+        for j in range(no_descriptions):
+            description = json_manager.get_description_from_idx_with_idx(i, j)
+            try:
+                data[image_name].append(description)
+            except:
+                data[image_name] = [description]
+
+    with open(filepath) as fp:
+        line = fp.readline()
+
+        while line:
+            item = line.split(":")
+            image_name = item[0]
+
+            # we should not have any image that exists both in old descriptions and new descriptions
+            assert image_name not in data.keys()
+
+            description = item[1]
+            description = description[1:]  # remove unnecessary space at the beginning of each description
+            data[image_name] = [description] # each image has only 1 description in new descriptions so we dont need to use .append()
+
+            line = fp.readline()
+
+    with open(savepath, 'w') as outfile:
+        json.dump(data, outfile)
+
+
 
 
 def get_annotation_dict():
@@ -109,7 +131,7 @@ class CelebaDescriptionGenerator(object):
         # removed this part since partly bald people marked as bald too.
         # # check hair (if bald and has hair)
         # if annotations[bald] == "1" and (annotations[black_hair] == "1" or annotations[blond_hair] == "1" or annotations[brown_hair] == "1"
-        #                           or annotations[gray_hair] == "1" or annotations[straight_hair] == "1" or annotations[wavy_hair] == "1" or annotations[has_bangs_hair] == "1"):
+        #                           or annotations[gray_hair] == "1" or annotations[straight_hair] == "1" or annotations[wavy_hair] == "1" or annotations[bangs] == "1"):
         #
         #     return False
 
@@ -136,150 +158,74 @@ class CelebaDescriptionGenerator(object):
         return count
 
 
-    def get_gender(self, annotations):
-        if annotations[male] == "1":
-            return "male"
-        else:
-            return "female"
-
-
-    def get_gender_auxiliary(self, annotations):
-        if annotations[male] == "1":
-            return "he"
-        else:
-            return "she"
-
-
-    def get_gender_auxiliary2(self, annotations):
-        if annotations[male] == "1":
-            return "his"
-        else:
-            return "her"
-
-
-    def get_age(self, annotations):
-        if annotations[39] == "1\n":
-            return "young"
-        else:
-            return "old"
-
-
-    def get_bangs(self, annotations):
-        if annotations[bangs] == "1":
-            return "bangs"
-        else:
-            return ""
-
-
-    def get_hair_color(self, annotations):
-        if annotations[bald] == "1":
-            return "bald"
-        elif annotations[black_hair] == "1":
-            return "black"
-        elif annotations[blond_hair] == "1":
-            return "blond"
-        elif annotations[brown_hair] == "1":
-            return "brown"
-        elif annotations[gray_hair] == "1":
-            return "gray"
-        else:
-            return ""
-
-
-    def get_hair_type(self, annotations):
-        if annotations[straight_hair] == "1":
-            return "straight"
-        elif annotations[wavy_hair] == "1":
-            return "wavy"
-        else:
-            return ""
-
-
-    def get_face(self, annotations):
-        face = ""
-        face_middle = "a face with "
-        face_end = ""
-
-        if annotations[chubby] == "1":
-            face = "chubby"
-            face_middle = "face with"
-            face_end = "face"
-
-        if annotations[oval_face] == "1":
-            face += " oval"
-            face_middle = "face with"
-            face_end = "face"
-
-        # if annotations[high_cheekbones] == "1":
-        #     face += f" {face_middle} high cheekbones"
-        #     face_middle = "and"
-        #     face_end = ""
-
-        if annotations[rosy_cheeks] == "1":
-            face += f" {face_middle} rosy cheeks "
-            face_end = ""
-
-        return face, face_end
-
-    def get_nose(self, annotations):
-        nose = ""
-        nose_middle = ""
-
-        if annotations[pointy_nose] == "1":
-            nose = "pointy"
-            nose_middle = "and"
-
-        if annotations[big_nose] == "1":
-            nose += f"{nose_middle} big"
-
-        if not nose != "":
-            nose += " nose"
-
-        return nose
-
-
     def generate_description(self, annotations):
         # info from annotations
-        gender = self.get_gender(annotations)
-        he_she = self.get_gender_auxiliary(annotations)
-        his_her = self.get_gender_auxiliary2(annotations)
-        hair_type = self.get_hair_type(annotations)
-        hair_color = self.get_hair_color(annotations)
-        bangs = self.get_bangs(annotations)
-        age = self.get_age(annotations)
-        face, face_end = self.get_face(annotations)
-        nose = self.get_nose(annotations)
+        intro = get_introduction_info(annotations)
+        he_she = get_gender_auxiliary(annotations)
+        his_her = get_gender_auxiliary2(annotations)
+        hair = get_hair(annotations)
+        face = get_face(annotations)
+        nose = get_nose(annotations)
+        beard = get_beard(annotations)
+        eye_area = get_eye_information(annotations, he_she, his_her)
+        makeup = get_makeup(annotations)
+        mouth_area = get_mouth_area(annotations, he_she)
 
-        # TODO: Add randomness
-        # combinations that will form description
-
-        # hair description
-        combination1 = f"A {age} {gender} with {hair_color} {hair_type} hair ."
-
-        # description about bangs
+        # gender and hair description
+        combination1 = f"{intro} {hair} ."
 
         if bangs != "":
-            combination1 = f"A {age} {gender} with {hair_color} {hair_type} hair with bangs ."
+            combination1 = f"{intro} {hair} ."
 
-
+        # face information
         combination2 = ""
         if face != "":
-            combination2 = f"{he_she} has {face} {face_end} ."
+            combination2 = f" {he_she} has {face} ."
 
-
+        # nose
         combination3 = ""
-
         if nose != "":
-            combination3 = f"{he_she} has {nose}"
+            combination3 = f" {he_she} has {nose} ."
+
+        # beard stuff
+        combination4 = ""
+        if beard != "" and he_she != "she": # we dont need to specify that a girl has no beard
+            combination4 = f" {he_she} has {beard} ."
+
+        # eye area
+        combination5 = ""
+        if eye_area != "":
+            combination5 = f"{eye_area}"
+
+        combination6 = f"{makeup}"
+        combination7 = f"{mouth_area}"
 
 
+        # add descriptive sentences in a random order (except introduction sentence)
+        middle_choices = [combination2, combination3, combination4, combination5, combination6, combination7]
+        middle_choice_combinations = list(itertools.permutations(middle_choices))
 
-        description = f"{combination1}  {combination2} {combination3}"
+        choice = randint(0, len(middle_choice_combinations)-1)
+        description = combination1 \
+                      + middle_choice_combinations[choice][0] \
+                      + middle_choice_combinations[choice][1] \
+                      + middle_choice_combinations[choice][2] \
+                      + middle_choice_combinations[choice][3] \
+                      + middle_choice_combinations[choice][4] \
+                      + middle_choice_combinations[choice][5]
+
+        description = re.sub('\s+', ' ', description)
+        description = re.sub('( . . )+', ' . ', description)
+        description = re.sub('( . . )+', ' . ', description)
 
         return description
 
 
     def execute(self, filepath):
+        no_male = 0.001
+        no_female = 0.001
+        desired_ratio = 1.0
+
         with open(filepath) as fp:
             line = fp.readline() # we don't need first line
             annotation_names = fp.readline().split(" ") # second line has annotation names
@@ -299,6 +245,7 @@ class CelebaDescriptionGenerator(object):
             skipped_already_has_desc = 0
             skipped_no_annons = 0
             skipped_rule_check = 0
+            skipped_ratio_check = 0
             generated = 0
             skip = False
             while line:
@@ -322,12 +269,24 @@ class CelebaDescriptionGenerator(object):
                     skipped_rule_check += 1
                     skip = True
 
+
+                m_to_f_ratio = no_male / no_female
+                if m_to_f_ratio < desired_ratio and annotations[20] != "1":
+                    skipped_ratio_check += 1
+                    skip = True
+
+
                 if skip:
                     skip = False
                     line = fp.readline()
                     current += 1
                     progress_bar.update(1)
                     continue
+
+                if annotations[20] == "1":
+                    no_male += 1
+                else:
+                    no_female += 1
 
                 description = self.generate_description(annotations)
                 generated += 1
@@ -337,8 +296,11 @@ class CelebaDescriptionGenerator(object):
                 current += 1
                 progress_bar.update(1)
 
+
             f.close()
             print(f"Skipped {skipped_already_has_desc} descriptions since they already had descriptions.")
             print(f"Skipped {skipped_no_annons} descriptions since they had less than {skip_under} annotations marked as '1'.")
             print(f"Skipped {skipped_rule_check} descriptions since their annotations made no sense (broke rules).")
+            print(f"Skipped {skipped_ratio_check} descriptions to preserve male to female ratio.")
+            print(f"Generated a dataset of descriptions with male to female ratio of {m_to_f_ratio} .")
             print(f"Generated {generated} descriptions.")

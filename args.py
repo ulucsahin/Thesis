@@ -12,6 +12,7 @@ class Args():
     cleanedup_lfw_descriptions = "E:/TezData/cleanedup_lfw.json" # cleaner hierarchy version of raw_uluc.json file
     celeba_annotations_path = "E:/TezData/list_attr_celeba.txt"
     uluc_generated_descriptions = "E:/TezData/generated_attr_celeba.txt"
+    uluc_combined_dataset_json = "E:/TezData/uluc_combined_descriptions.json"
     annotation_dict_path = "E:/TezData/celeba_annotation_index.txt"
     annotation_sentence_parts = "E:/TezData/sentence_version_annotations.txt"
 
